@@ -133,10 +133,6 @@ body {
   margin-bottom: 16px;
 }
 
-.task:last-child {
-  margin-bottom: 0;
-}
-
 .task-data {
   display: flex;
   margin-top: 4px;
