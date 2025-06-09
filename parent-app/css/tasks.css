@@ -111,8 +111,8 @@ body {
 
 .tasks {
   margin: 0 auto;
+  height: 400px;
   margin-top: 25px;
-  margin-bottom: 50px;
 
   overflow-y: auto;
   overflow-x: hidden;
