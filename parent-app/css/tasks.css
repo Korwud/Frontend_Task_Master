@@ -110,10 +110,9 @@ body {
 
 
 .tasks {
-  width: 393px;
-  height: 500px;
   margin: 0 auto;
   margin-top: 25px;
+  margin-bottom: 50px;
 
   overflow-y: auto;
   overflow-x: hidden;
@@ -133,7 +132,6 @@ body {
   padding-bottom: 8px;
   padding-right: 8px;
   margin-bottom: 24px;
-  margin-left: 25px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
