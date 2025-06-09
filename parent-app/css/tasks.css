@@ -117,7 +117,9 @@ body {
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  touch-action: auto;
+  touch-action: pan-y; 
+  -ms-overflow-style: scrollbar;
+  scrollbar-width: auto; 
 }
 
 .task {
