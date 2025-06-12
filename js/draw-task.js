@@ -57,14 +57,7 @@ function transformEvents(tasksArray) {
     }));
 }
 
-(async function() {
-    const rawEvents = await fetchEvents();
-    console.log("Сюда: ", rawEvents);
-    const tasks = transformEvents(rawEvents);
-    
-    console.log('Данные с сервера (массив объектов):', tasks);
-    console.table(tasks);
-})();
+loadAndRenderTasks();
 
 async function deleteTaskById(taskId) {
     try {
@@ -99,13 +92,12 @@ async function deleteTaskById(taskId) {
     }
 }
 
-// Функция отрисовки задач
 function renderTasks(tasks) {
     if (!container) {
         console.error('Контейнер для задач не найден!');
         return;
     }
-    
+
     container.innerHTML = '';
 
     if (tasks.length === 0) {
@@ -116,42 +108,55 @@ function renderTasks(tasks) {
     tasks.forEach(task => {
         const templateContent = template.content.cloneNode(true);
         const taskElement = templateContent.querySelector('.task-card');
-        
+
+        // Название задачи
         const nameElement = templateContent.querySelector('.name-task');
         nameElement.textContent = task.name || 'Без названия';
 
+        // Приоритет
         const priorityElement = templateContent.querySelector('.priorit');
         const priorityContainer = templateContent.querySelector('.list-tags');
-        
-        // Очищаем предыдущие классы и стили
-        priorityContainer.className = 'list-tags priority-container';
-        priorityContainer.style.display = 'flex';
-        priorityContainer.style.justifyContent = 'center';
-        priorityContainer.style.alignItems = 'center';
-        
-        // Устанавливаем стиль и текст в зависимости от приоритета
-        switch(task.task_priority) {
+
+        priorityElement.classList.remove('priority-normal', 'priority-matter', 'priority-important', 'priority-default');
+
+        switch (task.task_priority) {
             case 'normal':
-                priorityContainer.style.backgroundColor = '#4CAF50';
                 priorityElement.textContent = 'нормально';
+                priorityElement.classList.add('priority-normal');
                 break;
             case 'matter':
-                priorityContainer.style.backgroundColor = '#F44336';
                 priorityElement.textContent = 'важно';
+                priorityElement.classList.add('priority-important');
                 break;
             case 'not-matter':
-                priorityContainer.style.backgroundColor = '#9E9E9E';
                 priorityElement.textContent = 'не важно';
+                priorityElement.classList.add('priority-matter');
                 break;
             default:
-                priorityContainer.style.backgroundColor = '#E0E0E0';
                 priorityElement.textContent = task.task_priority || 'нет';
+                priorityElement.classList.add('priority-default');
         }
+
+        // Теги
+        const tagContainer = templateContent.querySelector('.tag-container');
+        tagContainer.innerHTML = ''; 
+
+        const tags = (task.list_tags || '')
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag);
+
+        tags.forEach(tag => {
+            const tagEl = document.createElement('span');
+            tagEl.textContent = tag;
+            tagEl.classList.add('list-tags-item');
+            tagContainer.appendChild(tagEl);
+        });
 
         const deadlineElement = templateContent.querySelector('.deadline');
         deadlineElement.textContent = formatTaskDate(task.date, task.task_time);
 
-        // Обработчик для кнопки удаления
+        // Обработка удаления
         const deleteButton = templateContent.querySelector('.icon-button');
         deleteButton.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -172,7 +177,7 @@ function renderTasks(tasks) {
                         .then(success => {
                             if (success) {
                                 console.log(`Задача с ID ${taskId} успешно удалена.`);
-                                loadAndRenderTasks(); // Обновляем список задач
+                                loadAndRenderTasks();
                             } else {
                                 console.error(`Не удалось удалить задачу с ID ${taskId}.`);
                                 alert("Не удалось удалить задачу.");
@@ -182,7 +187,7 @@ function renderTasks(tasks) {
                 };
 
                 confirmFalseButton.onclick = () => {
-                    deleteWindow.classList.add('hidden'); 
+                    deleteWindow.classList.add('hidden');
                 };
 
                 document.addEventListener('mousedown', (event) => {
@@ -195,7 +200,7 @@ function renderTasks(tasks) {
             }
         });
 
-        // Обработчик клика по карточке для просмотра деталей
+        // Переход к деталям задачи
         taskElement.addEventListener('click', () => {
             localStorage.setItem('current_task_data', JSON.stringify(task));
             const search = window.location.search;
@@ -229,7 +234,6 @@ function formatTaskDate(dateString, timeString) {
     return result || 'Нет срока';
 }
 
-// Основная функция загрузки и отрисовки
 async function loadAndRenderTasks() {
     try {
         const userId = fetchUserId();
@@ -238,8 +242,8 @@ async function loadAndRenderTasks() {
         }
         localStorage.setItem('user_id', userId);
 
-        const rawTasks = await fetchEvents(); // Используем существующую функцию
-        TASK_DATA = transformEvents(rawTasks); // Используем существующую функцию
+        const rawTasks = await fetchEvents(); 
+        TASK_DATA = transformEvents(rawTasks); 
         renderTasks(TASK_DATA);
     } catch (error) {
         console.error('Ошибка загрузки задач:', error);
@@ -259,16 +263,14 @@ if (href && href !== '') {
 }
 
 links.forEach(link => {
-  const href = link.getAttribute('href');
-  if (href && href !== '') {
-    const separator = href.includes('?') ? '&' : '?';
-    link.setAttribute('href', href + (search ? separator + search.slice(1) : ''));
-    console.log(link.getAttribute('href'));
-  }
+    const href = link.getAttribute('href');
+    if (href && href !== '') {
+        const separator = href.includes('?') ? '&' : '?';
+        link.setAttribute('href', href + (search ? separator + search.slice(1) : ''));
+        console.log(link.getAttribute('href'));
+    }
 });
 
-// Функция для обновления задач после удаления
 window.refreshTasks = loadAndRenderTasks;
 
-// Запуск при загрузке страницы
 document.addEventListener('DOMContentLoaded', loadAndRenderTasks);
