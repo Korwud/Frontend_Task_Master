@@ -13,32 +13,24 @@ let currentMinutesValue = NaN;
 
 
 window.onload = function() {
-    const hours = new Date().getHours()
-    start_event.value = hours + 1 < 24 ? `${modifyTime(hours + 1)}:00` : '00:00';
-    if (hours + 2 == 25) {
-        finish_event.value = '01:00';
-    } else if (hours + 2 == 24) {
-        finish_event.value = '00:00';
+    const originalEvent = JSON.parse(localStorage.getItem('current_event_data'));
+    console.log(originalEvent);
+    if (originalEvent && !window.location.href.includes('create-new-event.html')) {
+        start_event.value = originalEvent.event_time_first;
+        finish_event.value = originalEvent.event_time_second;
     } else {
-        finish_event.value = `${modifyTime(hours + 2)}:00`
+        const hours = new Date().getHours()
+        start_event.value = hours + 1 < 24 ? `${modifyTime(hours + 1)}:00` : '00:00';
+        if (hours + 2 == 25) {
+            finish_event.value = '01:00';
+        } else if (hours + 2 == 24) {
+            finish_event.value = '00:00';
+        } else {
+            finish_event.value = `${modifyTime(hours + 2)}:00`
+        }
     }
 }
 
-// function initializeValues() {
-//     if (flag == 'start') {
-//         let value = start_event.value.split(':')
-//         value = value[0] == '' ? start_event.placeholder.split(':') : value;
-//         currentHoursValue = isNaN(value[0]) ? 0 : Number(value[0]);
-//         currentMinutesValue = isNaN(value[1]) ? 0 : Number(value[1]);
-//     } else if (flag == 'finish') {
-//         let value = finish_event.value.split(':')
-//         value = value[0] == '' ? finish_event.placeholder.split(':') : value;
-//         currentHoursValue = isNaN(value[0]) ? 0 : Number(value[0]);
-//         currentMinutesValue = isNaN(value[1]) ? 0 : Number(value[1]);
-//     }
-//     updateDisplay('hours');
-//     updateDisplay('minutes');
-// }
 
 function initializeValues() {
     let value;

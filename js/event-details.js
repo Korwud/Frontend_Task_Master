@@ -21,20 +21,6 @@ function replaceWithFormattedDate() {
     }
 }
 
-// Валидация времени начала
-document.querySelector('.start-event-time').addEventListener('input', function(e) {
-    const timeInput = e.target.value;
-    const validTimeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    e.target.setCustomValidity(validTimeRegex.test(timeInput) ? '' : 'Время должно быть в формате ЧЧ:MM (например, 14:30)');
-});
-
-// Валидация времени окончания
-document.querySelector('.finish-event-time').addEventListener('input', function(e) {
-    const timeInput = e.target.value;
-    const validTimeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    e.target.setCustomValidity(validTimeRegex.test(timeInput) ? '' : 'Время должно быть в формате ЧЧ:MM (например, 14:30)');
-});
-
 // Склонение слова "минут"
 function updateMinutesLabel(value) {
     const minutesLabel = document.getElementById('minutes-label');
@@ -120,6 +106,26 @@ document.getElementById('darkEvForm').addEventListener('submit', async function(
     };
 
     try {
+        const originalEvent = JSON.parse(localStorage.getItem('current_event_data'));
+        if (!originalEvent?.event_id) {
+            alert("Ошибка: не найден ID задачи для обновления");
+            return;
+        }
+
+        const deleteResponse = await fetch('https://flask.stk8s.66bit.ru/delete', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: parseInt(userId),
+                id: originalEvent.event_id,
+                type: 'event'
+            }),
+        });
+
+        if (!deleteResponse.ok) throw new Error('Не удалось удалить задачу');
+
         const response = await fetch('https://flask.stk8s.66bit.ru/events', {
             method: 'POST',
             headers: {
@@ -132,8 +138,10 @@ document.getElementById('darkEvForm').addEventListener('submit', async function(
         
         const data = await response.json();
         console.log('Успех:', data);
-        alert('Данные отправлены!');
-        window.location.href = 'index.html';
+        const search = window.location.search;
+        const params = new URLSearchParams(search);
+        const user_id = Number(params.get('id'));
+        window.location.href = `shedule.html?id=${user_id}`;
     } catch (error) {
         console.error('Ошибка:', error);
         alert('Ошибка отправки: ' + error.message);
