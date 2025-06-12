@@ -1,28 +1,37 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Находим кнопку и форму
     const submitButton = document.querySelector('.yellow-button');
     const form = document.getElementById('darkTaskForm');
     
     if (!submitButton || !form) return;
 
-    // Вешаем обработчик на клик по кнопке
+    // Запрет отправки формы по нажатию Enter
+    form.addEventListener('keydown', (evt) => {
+        if (evt.key === 'Enter' && evt.target.tagName !== 'TEXTAREA') {
+            evt.preventDefault();
+        }
+    });
+
     submitButton.addEventListener('click', async (evt) => {
-        evt.preventDefault(); // Предотвращаем стандартное поведение
-        
-        const userId = localStorage.getItem('user_id');
+        evt.preventDefault(); 
+
+        if (!validateDateTime()) {
+            return;
+        }
+
+        const search = window.location.search;
+        const params = new URLSearchParams(search);
+        const userId = Number(params.get('id'));
         if (!userId) {
             alert("Ошибка: не удалось получить идентификатор пользователя.");
             return;
         }
 
-        // Получаем оригинальную задачу
         const originalTask = JSON.parse(localStorage.getItem('current_task_data'));
         if (!originalTask?.id) {
             alert("Ошибка: не найден ID задачи для обновления");
             return;
         }
 
-        // Формируем обновленную задачу
         const updatedTask = {
             id: originalTask.id,
             user_id: userId,
@@ -34,11 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
             task_date: form.querySelector('[name="day-task"]').value,
             task_notification_time: Number(form.querySelector('[name="time-notification"]').value),
             task_status: originalTask.status || "pending",
-            task_time: form.querySelector('[name="task-time"]').value,
+            task_time: form.querySelector('[name="task-time"]').value.trim() || null,
         };
 
         try {
-            // 1. Удаляем старую задачу
+            // Удаляем старую задачу
             const deleteResponse = await fetch('https://flask.stk8s.66bit.ru/delete', {
                 method: 'PUT',
                 headers: {
@@ -53,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!deleteResponse.ok) throw new Error('Не удалось удалить задачу');
 
-            // 2. Создаем обновленную задачу
+            // Создаем/обновляем задачу
             const createResponse = await fetch('https://flask.stk8s.66bit.ru/tasks', {
                 method: 'POST',
                 headers: {
@@ -64,10 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!createResponse.ok) throw new Error('Не удалось обновить задачу');
 
-            const search = window.location.search;
-            const params = new URLSearchParams(search);
-            const user_id = Number(params.get('id'));
-            window.location.href = `index.html?id=${user_id}`;
+            window.location.href = `index.html?id=${userId}`;
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Ошибка при сохранении: ' + error.message);
@@ -75,12 +81,89 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Функция для получения тегов
 function getTagsAsArray() {
     const tagsContainer = document.getElementById('output');
     if (!tagsContainer) return [];
+    return Array.from(tagsContainer.querySelectorAll('.word-block'))
+        .map(tagElement => tagElement.textContent.replace('✖', '').trim())
+        .filter(tag => tag);
+}
+
+function showError(elementId, message) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.textContent = message;
+        el.style.display = 'block';
+        el.style.color = 'red';
+        el.style.fontSize = '0.9em';
+        el.style.marginTop = '4px';
+    }
+}
+
+function hideError(elementId) {
+    const el = document.getElementById(elementId);
+    if (el) {
+        el.textContent = '';
+        el.style.display = 'none';
+    }
+}
+
+function validateDateTime() {
+    const dateInput = document.getElementById('dateInput');
+    const timeInput = document.querySelector('.task-time');
+    const errorDateId = 'date-error';
+    const errorDateTimeId = 'datetime-error';
     
-    return Array.from(tagsContainer.querySelectorAll('.word-block')).map(tagElement => {
-        return tagElement.textContent.replace('✖', '').trim();
-    });
+    hideError(errorDateId);
+    hideError(errorDateTimeId);
+    
+    if (!dateInput.value) {
+        showError(errorDateId, 'Пожалуйста, укажите дату');
+        return false;
+    }
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const selectedDate = new Date(dateInput.value);
+    
+    if (selectedDate < today) {
+        showToast("Нельзя выбрать дату в прошлом");
+        return;
+    }
+
+    if (timeInput.value && timeInput.value.trim()) {
+        const timeRegex = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+        if (!timeRegex.test(timeInput.value.trim())) {
+            showError(errorDateTimeId, 'Некорректный формат времени');
+            return false;
+        }
+
+        const [hours, minutes] = timeInput.value.split(':').map(Number);
+        const selectedDateTime = new Date(selectedDate);
+        selectedDateTime.setHours(hours, minutes, 0, 0);
+        
+        if (selectedDateTime < now) {
+            showToast("Нельзя выбрать время в прошлом");
+            return;
+        }
+    }
+    return true;
+}
+
+document.addEventListener('touchmove', function(e) {
+    if (e.touches && e.touches[0].clientY > 0) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        toast.classList.add("hidden");
+    }, 1000);
 }

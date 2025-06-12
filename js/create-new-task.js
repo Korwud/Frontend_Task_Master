@@ -143,67 +143,89 @@ document.addEventListener('touchmove', function (event) {
     if (event.touches && event.touches[0].clientY > 0) {
         event.preventDefault();
     }
-
-    
 }, { passive: false });
 
-function validateDateTime(dateInputId, timeInputClass, errorId) {
-    const dateInput = document.getElementById(dateInputId);
-    const timeInput = document.querySelector(timeInputClass);
-    const error = document.getElementById(errorId);
+function validateDateTime() {
+    const dateInput = document.getElementById('dateInput');
+    const timeInput = document.querySelector('.task-time');
+    const errorDate = document.getElementById('date-error');
+    const errorDateTime = document.getElementById('datetime-error');
 
-    if (!dateInput || !timeInput || !error) return;
+    errorDate.style.display = 'none';
+    errorDateTime.style.display = 'none';
 
-    function checkDateTime() {
-        const dateStr = dateInput.value;
-        const timeStr = timeInput.value.trim();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        if (!dateStr || !timeStr) return false;
+    if (!dateInput.value) {
+        errorDate.style.display = 'block';
+        errorDate.textContent = '';
+        showToast("Выберите дату");
+        return false;
+    }
 
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        const selectedDateTime = new Date(dateStr);
-        selectedDateTime.setHours(hours, minutes, 0, 0);
+    const selectedDate = new Date(dateInput.value);
 
-        const now = new Date();
+    if (selectedDate < today) {
+        errorDate.style.display = 'block';
+        errorDate.textContent = '';
+        showToast("Нельзя выбрать дату в прошлом");
+        return false;
+    }
 
-        if (selectedDateTime < now) {
-            error.style.display = 'block';
-            dateInput.style.borderColor = 'red';
-            timeInput.style.borderColor = 'red';
+    if (timeInput.value) {
+        const timeRegex = /^([01]?\d|2[0-3]):([0-5]\d)$/;
+        if (!timeRegex.test(timeInput.value)) {
+            errorDateTime.style.display = 'block';
+            errorDateTime.textContent = 'Некорректный формат времени';
+            showToast("Неверный формат времени");
             return false;
-        } else {
-            error.style.display = 'none';
-            dateInput.style.borderColor = '';
-            timeInput.style.borderColor = '';
-            return true;
+        }
+
+        if (selectedDate.getTime() === today.getTime()) {
+            const [hours, minutes] = timeInput.value.split(':').map(Number);
+            const selectedTime = new Date();
+            selectedTime.setHours(hours, minutes, 0, 0);
+
+            if (selectedTime < now) {
+                showToast("Нельзя выбрать время в прошлом");
+                return;
+            }
         }
     }
-
-    // Проверяем при изменении любого из полей
-    dateInput.addEventListener('change', checkDateTime);
-    timeInput.addEventListener('change', checkDateTime);
-
-    return checkDateTime;
+    return true; 
 }
 
-// Вызов функции и получаем готовую функцию checkDateTime
-const isDateTimeValid = validateDateTime('dateInput', '.task-time', 'datetime-error');
-
-document.querySelector('.popup-save').addEventListener('click', (event) => {
-    if (!isDateTimeValid()) {
-        // Если дата или время из прошлого — блокируем сохранение
-        event.preventDefault(); // Останавливаем любые действия
+document.getElementById('darkTaskForm').addEventListener('submit', function(e) {
+    if (!validateDateTime()) {
+        e.preventDefault();
         return;
-    }
-
-    // Здесь выполняется логика сохранения, если всё валидно
-    timePicker.value = `${modifyTime(currentHoursValue)}:${modifyTime(currentMinutesValue)}`;
-    timePicker.style.backgroundColor = '#292A3C';
-    timePicker.style.color = '#ffffff';
-    closePopup();
+    } 
 });
 
 document.getElementById('darkTaskForm').addEventListener('submit', function (e) {
-    e.preventDefault(); // Полностью запрещаем стандартную отправку формы
+    e.preventDefault(); 
+
+    if (!isDateTimeValid()) {
+        return;
+    }
+
+    console.log("Форма прошла валидацию");
+    this.submit(); 
 });
 
+document.getElementById('darkTaskForm').addEventListener('submit', function (e) {
+    e.preventDefault(); 
+});
+
+function showToast(message) {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+        toast.classList.add("hidden");
+    }, 1000);
+}

@@ -111,8 +111,6 @@ function calculateEventHeight(startH, startM, endH, endM) {
     return 78 * (24 - (startH + startM/60)) - 12;
 }
 
-
-
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', async () => {
     await filterAndRenderTasks();
